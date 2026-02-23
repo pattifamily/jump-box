@@ -139,13 +139,13 @@
       <div style="font-size: 2rem; margin-bottom: 10px;">🟥</div>
       <div>Tap or Press Space to Jump!</div>
       <div id="instructions">Avoid the spikes!</div>
-      <button class="btn" onclick="startGame()">START</button>
+      <button id="startBtn" class="btn">START</button>
     </div>
     <div id="gameOverScreen">
       <div style="font-size: 2rem; margin-bottom: 10px;">💥</div>
       <div>Game Over!</div>
       <div id="finalScore">Score: 0</div>
-      <button class="btn" onclick="startGame()">PLAY AGAIN</button>
+      <button id="restartBtn" class="btn">PLAY AGAIN</button>
     </div>
   </div>
   <div id="score">Score: 0</div>
@@ -304,7 +304,11 @@
       e.preventDefault();
       jump();
     });
+    
+    // Button event listeners
+    document.getElementById('startBtn').addEventListener('click', startGame);
+    document.getElementById('restartBtn').addEventListener('click', startGame);
   </script>
 </body>
 </html>
-<!-- refresh -->
+
