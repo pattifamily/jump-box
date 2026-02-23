@@ -61,7 +61,6 @@
       bottom: 30px;
       left: 50px;
       box-shadow: 0 0 15px #ff6b6b, inset 0 -5px 10px rgba(0,0,0,0.2);
-      transition: transform 0.1s;
     }
     
     .spike {
@@ -93,7 +92,7 @@
       left: 0;
       right: 0;
       bottom: 0;
-      background: rgba(0, 0, 0, 0.8);
+      background: rgba(0, 0, 0, 0.85);
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -117,10 +116,6 @@
       margin-top: 20px;
       font-weight: bold;
       box-shadow: 0 0 20px rgba(0, 255, 136, 0.5);
-    }
-    
-    .btn:active {
-      transform: scale(0.95);
     }
     
     #instructions {
@@ -152,6 +147,7 @@
   <div id="highScore">Best: 0</div>
 
   <script>
+    // Get elements
     const player = document.getElementById('player');
     const gameContainer = document.getElementById('gameContainer');
     const scoreDisplay = document.getElementById('score');
@@ -159,7 +155,10 @@
     const startScreen = document.getElementById('startScreen');
     const gameOverScreen = document.getElementById('gameOverScreen');
     const finalScoreDisplay = document.getElementById('finalScore');
+    const startBtn = document.getElementById('startBtn');
+    const restartBtn = document.getElementById('restartBtn');
     
+    // Game state
     let isJumping = false;
     let isGameRunning = false;
     let score = 0;
@@ -178,13 +177,13 @@
       
       isJumping = true;
       let jumpHeight = 0;
-      const jumpInterval = setInterval(() => {
+      const jumpInterval = setInterval(function() {
         jumpHeight += 5;
         player.style.bottom = (30 + jumpHeight) + 'px';
         
         if (jumpHeight >= 80) {
           clearInterval(jumpInterval);
-          const fallInterval = setInterval(() => {
+          const fallInterval = setInterval(function() {
             jumpHeight -= 5;
             player.style.bottom = (30 + jumpHeight) + 'px';
             
@@ -226,7 +225,8 @@
       }
       
       // Move spikes
-      spikes.forEach((spike, index) => {
+      for (let i = spikes.length - 1; i >= 0; i--) {
+        const spike = spikes[i];
         let left = parseInt(spike.style.left) || 360;
         left -= gameSpeed;
         spike.style.left = left + 'px';
@@ -239,19 +239,22 @@
             playerRect.left < spikeRect.right - 10 &&
             playerRect.bottom > spikeRect.top + 10) {
           gameOver();
+          return;
         }
         
         // Remove off-screen spikes
         if (left < -30) {
           spike.remove();
-          spikes.splice(index, 1);
+          spikes.splice(i, 1);
         }
-      });
+      }
       
       gameLoop = requestAnimationFrame(updateGame);
     }
     
     function startGame() {
+      console.log('Starting game...');
+      
       // Reset
       score = 0;
       gameSpeed = 5;
@@ -259,7 +262,9 @@
       player.style.bottom = '30px';
       
       // Clear spikes
-      spikes.forEach(s => s.remove());
+      for (let i = spikes.length - 1; i >= 0; i--) {
+        spikes[i].remove();
+      }
       spikes = [];
       
       scoreDisplay.textContent = 'Score: 0';
@@ -291,24 +296,27 @@
       gameOverScreen.style.display = 'flex';
     }
     
-    // Controls
-    document.addEventListener('keydown', (e) => {
+    // Add event listeners directly
+    startBtn.onclick = function() {
+      startGame();
+    };
+    
+    restartBtn.onclick = function() {
+      startGame();
+    };
+    
+    // Keyboard controls
+    document.onkeydown = function(e) {
       if (e.code === 'Space') {
         e.preventDefault();
         jump();
       }
-    });
+    };
     
-    gameContainer.addEventListener('click', jump);
-    gameContainer.addEventListener('touchstart', (e) => {
-      e.preventDefault();
+    // Touch/click controls
+    gameContainer.onclick = function() {
       jump();
-    });
-    
-    // Button event listeners
-    document.getElementById('startBtn').addEventListener('click', startGame);
-    document.getElementById('restartBtn').addEventListener('click', startGame);
+    };
   </script>
 </body>
 </html>
-
