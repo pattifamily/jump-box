@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Jump Box!</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Segoe UI', sans-serif;
+      overflow: hidden;
+      touch-action: manipulation;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    
+    h1 {
+      color: #fff;
+      font-size: 2.5rem;
+      margin-bottom: 10px;
+      text-shadow: 0 0 20px #00ff88;
+    }
+    
+    #gameContainer {
+      position: relative;
+      width: 350px;
+      height: 200px;
+      background: linear-gradient(180deg, #0f0f23 0%, #1a1a3a 100%);
+      border: 4px solid #00ff88;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 0 30px rgba(0, 255, 136, 0.3);
+    }
+    
+    #ground {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 30px;
+      background: linear-gradient(180deg, #00ff88 0%, #00cc6a 100%);
+    }
+    
+    #player {
+      position: absolute;
+      width: 30px;
+      height: 30px;
+      background: linear-gradient(135deg, #ff6b6b 0%, #ee5a5a 50%, #ff6b6b 100%);
+      border-radius: 4px;
+      bottom: 30px;
+      left: 50px;
+      box-shadow: 0 0 15px #ff6b6b, inset 0 -5px 10px rgba(0,0,0,0.2);
+      transition: transform 0.1s;
+    }
+    
+    .spike {
+      position: absolute;
+      bottom: 30px;
+      width: 0;
+      height: 0;
+      border-left: 12px solid transparent;
+      border-right: 12px solid transparent;
+      border-bottom: 25px solid #ff4757;
+      filter: drop-shadow(0 0 5px #ff4757);
+    }
+    
+    #score {
+      color: #fff;
+      font-size: 1.5rem;
+      margin-top: 15px;
+    }
+    
+    #highScore {
+      color: #aaa;
+      font-size: 1rem;
+      margin-top: 5px;
+    }
+    
+    #startScreen, #gameOverScreen {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.8);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      z-index: 10;
+    }
+    
+    #gameOverScreen {
+      display: none;
+    }
+    
+    .btn {
+      background: #00ff88;
+      color: #1a1a2e;
+      border: none;
+      padding: 15px 40px;
+      font-size: 1.2rem;
+      border-radius: 30px;
+      cursor: pointer;
+      margin-top: 20px;
+      font-weight: bold;
+      box-shadow: 0 0 20px rgba(0, 255, 136, 0.5);
+    }
+    
+    .btn:active {
+      transform: scale(0.95);
+    }
+    
+    #instructions {
+      color: #888;
+      margin-top: 10px;
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body>
+  <h1>🟥 Jump Box!</h1>
+  <div id="gameContainer">
+    <div id="ground"></div>
+    <div id="player"></div>
+    <div id="startScreen">
+      <div style="font-size: 2rem; margin-bottom: 10px;">🟥</div>
+      <div>Tap or Press Space to Jump!</div>
+      <div id="instructions">Avoid the spikes!</div>
+      <button class="btn" onclick="startGame()">START</button>
+    </div>
+    <div id="gameOverScreen">
+      <div style="font-size: 2rem; margin-bottom: 10px;">💥</div>
+      <div>Game Over!</div>
+      <div id="finalScore">Score: 0</div>
+      <button class="btn" onclick="startGame()">PLAY AGAIN</button>
+    </div>
+  </div>
+  <div id="score">Score: 0</div>
+  <div id="highScore">Best: 0</div>
+
+  <script>
+    const player = document.getElementById('player');
+    const gameContainer = document.getElementById('gameContainer');
+    const scoreDisplay = document.getElementById('score');
+    const highScoreDisplay = document.getElementById('highScore');
+    const startScreen = document.getElementById('startScreen');
+    const gameOverScreen = document.getElementById('gameOverScreen');
+    const finalScoreDisplay = document.getElementById('finalScore');
+    
+    let isJumping = false;
+    let isGameRunning = false;
+    let score = 0;
+    let highScore = localStorage.getItem('jumpBoxHighScore') || 0;
+    let gameSpeed = 5;
+    let spikes = [];
+    let gameLoop;
+    let spikeTimer;
+    
+    highScoreDisplay.textContent = 'Best: ' + highScore;
+    
+    // Jump function
+    function jump() {
+      if (!isGameRunning) return;
+      if (isJumping) return;
+      
+      isJumping = true;
+      let jumpHeight = 0;
+      const jumpInterval = setInterval(() => {
+        jumpHeight += 5;
+        player.style.bottom = (30 + jumpHeight) + 'px';
+        
+        if (jumpHeight >= 80) {
+          clearInterval(jumpInterval);
+          const fallInterval = setInterval(() => {
+            jumpHeight -= 5;
+            player.style.bottom = (30 + jumpHeight) + 'px';
+            
+            if (jumpHeight <= 0) {
+              clearInterval(fallInterval);
+              player.style.bottom = '30px';
+              isJumping = false;
+            }
+          }, 20);
+        }
+      }, 20);
+    }
+    
+    // Spawn spikes
+    function spawnSpike() {
+      if (!isGameRunning) return;
+      
+      const spike = document.createElement('div');
+      spike.className = 'spike';
+      spike.style.left = '360px';
+      gameContainer.appendChild(spike);
+      spikes.push(spike);
+      
+      // Random next spawn time
+      const nextSpawn = 1000 + Math.random() * 1500 - gameSpeed * 50;
+      spikeTimer = setTimeout(spawnSpike, Math.max(600, nextSpawn));
+    }
+    
+    // Move spikes and check collision
+    function updateGame() {
+      if (!isGameRunning) return;
+      
+      score++;
+      scoreDisplay.textContent = 'Score: ' + score;
+      
+      // Increase speed over time
+      if (score % 500 === 0) {
+        gameSpeed += 0.5;
+      }
+      
+      // Move spikes
+      spikes.forEach((spike, index) => {
+        let left = parseInt(spike.style.left) || 360;
+        left -= gameSpeed;
+        spike.style.left = left + 'px';
+        
+        // Check collision
+        const playerRect = player.getBoundingClientRect();
+        const spikeRect = spike.getBoundingClientRect();
+        
+        if (playerRect.right > spikeRect.left + 10 && 
+            playerRect.left < spikeRect.right - 10 &&
+            playerRect.bottom > spikeRect.top + 10) {
+          gameOver();
+        }
+        
+        // Remove off-screen spikes
+        if (left < -30) {
+          spike.remove();
+          spikes.splice(index, 1);
+        }
+      });
+      
+      gameLoop = requestAnimationFrame(updateGame);
+    }
+    
+    function startGame() {
+      // Reset
+      score = 0;
+      gameSpeed = 5;
+      isJumping = false;
+      player.style.bottom = '30px';
+      
+      // Clear spikes
+      spikes.forEach(s => s.remove());
+      spikes = [];
+      
+      scoreDisplay.textContent = 'Score: 0';
+      startScreen.style.display = 'none';
+      gameOverScreen.style.display = 'none';
+      
+      isGameRunning = true;
+      
+      // Start spawning spikes
+      spawnSpike();
+      
+      // Start game loop
+      updateGame();
+    }
+    
+    function gameOver() {
+      isGameRunning = false;
+      clearTimeout(spikeTimer);
+      cancelAnimationFrame(gameLoop);
+      
+      // Update high score
+      if (score > highScore) {
+        highScore = score;
+        localStorage.setItem('jumpBoxHighScore', highScore);
+        highScoreDisplay.textContent = 'Best: ' + highScore;
+      }
+      
+      finalScoreDisplay.textContent = 'Score: ' + score;
+      gameOverScreen.style.display = 'flex';
+    }
+    
+    // Controls
+    document.addEventListener('keydown', (e) => {
+      if (e.code === 'Space') {
+        e.preventDefault();
+        jump();
+      }
+    });
+    
+    gameContainer.addEventListener('click', jump);
+    gameContainer.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      jump();
+    });
+  </script>
+</body>
+</html>
