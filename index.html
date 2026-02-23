@@ -34,13 +34,55 @@
     
     #gameContainer {
       position: relative;
-      width: 500px;
-      height: 300px;
+      width: 100vw;
+      height: 100vh;
+      max-width: 100%;
+      max-height: 100%;
       background: linear-gradient(180deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
-      border: 4px solid #00ff88;
-      border-radius: 10px;
+      border: none;
+      border-radius: 0;
       overflow: hidden;
-      box-shadow: 0 0 30px rgba(0, 255, 136, 0.3);
+      box-shadow: none;
+    }
+    
+    /* Make player and ground responsive */
+    #player {
+      position: absolute;
+      width: 8vw;
+      height: 8vw;
+      max-width: 60px;
+      max-height: 60px;
+      min-width: 30px;
+      min-height: 30px;
+      background: linear-gradient(135deg, #ff6b6b 0%, #ee5a5a 50%, #ff6b6b 100%);
+      border-radius: 4px;
+      bottom: 10vh;
+      left: 15vw;
+      box-shadow: 0 0 15px #ff6b6b, inset 0 -5px 10px rgba(0,0,0,0.2);
+      z-index: 10;
+    }
+    
+    #ground {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 10vh;
+      background: linear-gradient(180deg, #00ff88 0%, #00cc6a 50%, #009950 100%);
+      box-shadow: 0 -5px 20px rgba(0, 255, 136, 0.5);
+    }
+    
+    .spike {
+      position: absolute;
+      bottom: 10vh;
+      width: 0;
+      height: 0;
+      border-left: 5vw solid transparent;
+      border-right: 5vw solid transparent;
+      border-bottom: 10vw solid #ff4757;
+      max-border-bottom: 80px;
+      filter: drop-shadow(0 0 5px #ff4757);
+      z-index: 10;
     }
     
     /* Stars background */
@@ -78,20 +120,20 @@
     /* Mountains */
     .mountain {
       position: absolute;
-      bottom: 40px;
+      bottom: 10vh;
       width: 0;
       height: 0;
-      border-left: 60px solid transparent;
-      border-right: 60px solid transparent;
-      border-bottom: 80px solid #1a3a5c;
+      border-left: 15vw solid transparent;
+      border-right: 15vw solid transparent;
+      border-bottom: 20vh solid #1a3a5c;
       z-index: 1;
     }
     
     .mountain2 {
       border-bottom-color: #152a45;
-      border-left-width: 80px;
-      border-right-width: 80px;
-      border-bottom: 100px;
+      border-left-width: 20vw;
+      border-right-width: 20vw;
+      border-bottom: 25vh;
     }
     
     #ground {
@@ -187,7 +229,7 @@
     <div class="mountain" style="left: 280px;"></div>
     <div class="mountain mountain2" style="left: 400px;"></div>
     <div id="ground"></div>
-    <div id="player"></div>
+    <div id="player" style="left: 15vw; bottom: 10vh;"></div>
     <div id="startScreen">
       <div style="font-size: 2rem; margin-bottom: 10px;">🟥</div>
       <div>Tap or Press Space to Jump!</div>
@@ -216,6 +258,18 @@
     const startBtn = document.getElementById('startBtn');
     const restartBtn = document.getElementById('restartBtn');
     
+    // Game dimensions (responsive)
+    let groundY = gameContainer.offsetHeight * 0.1;
+    let startX = gameContainer.offsetWidth * 0.15;
+    let jumpStart = groundY;
+    
+    // Update on resize
+    window.addEventListener('resize', function() {
+      groundY = gameContainer.offsetHeight * 0.1;
+      startX = gameContainer.offsetWidth * 0.15;
+      jumpStart = groundY;
+    });
+    
     // Game state
     let isJumping = false;
     let isGameRunning = false;
@@ -235,19 +289,22 @@
       
       isJumping = true;
       let jumpHeight = 0;
+      const maxJump = gameContainer.offsetHeight * 0.25;
+      const jumpSpeed = gameContainer.offsetHeight * 0.015;
+      
       const jumpInterval = setInterval(function() {
-        jumpHeight += 6;
-        player.style.bottom = (40 + jumpHeight) + 'px';
+        jumpHeight += jumpSpeed;
+        player.style.bottom = (groundY + jumpHeight) + 'px';
         
-        if (jumpHeight >= 100) {
+        if (jumpHeight >= maxJump) {
           clearInterval(jumpInterval);
           const fallInterval = setInterval(function() {
-            jumpHeight -= 6;
-            player.style.bottom = (40 + jumpHeight) + 'px';
+            jumpHeight -= jumpSpeed;
+            player.style.bottom = (groundY + jumpHeight) + 'px';
             
             if (jumpHeight <= 0) {
               clearInterval(fallInterval);
-              player.style.bottom = '40px';
+              player.style.bottom = groundY + 'px';
               isJumping = false;
             }
           }, 20);
@@ -268,7 +325,7 @@
       
       const spike = document.createElement('div');
       spike.className = 'spike';
-      spike.style.left = '360px';
+      spike.style.left = gameContainer.offsetWidth + 'px';
       gameContainer.appendChild(spike);
       spikes.push(spike);
       
@@ -292,7 +349,7 @@
       // Move spikes
       for (let i = spikes.length - 1; i >= 0; i--) {
         const spike = spikes[i];
-        let left = parseInt(spike.style.left) || 360;
+        let left = parseInt(spike.style.left) || gameContainer.offsetWidth;
         left -= gameSpeed;
         spike.style.left = left + 'px';
         
@@ -308,7 +365,7 @@
         }
         
         // Remove off-screen spikes
-        if (left < -30) {
+        if (left < -50) {
           spike.remove();
           spikes.splice(i, 1);
         }
@@ -320,11 +377,16 @@
     function startGame() {
       console.log('Starting game...');
       
+      // Update responsive values
+      groundY = gameContainer.offsetHeight * 0.1;
+      startX = gameContainer.offsetWidth * 0.15;
+      
       // Reset
       score = 0;
-      gameSpeed = 4;
+      gameSpeed = gameContainer.offsetWidth * 0.015;
       isJumping = false;
-      player.style.bottom = '40px';
+      player.style.bottom = groundY + 'px';
+      player.style.left = startX + 'px';
       
       // Clear spikes
       for (let i = spikes.length - 1; i >= 0; i--) {
