@@ -163,7 +163,7 @@
     let isGameRunning = false;
     let score = 0;
     let highScore = localStorage.getItem('jumpBoxHighScore') || 0;
-    let gameSpeed = 5;
+    let gameSpeed = 4;
     let spikes = [];
     let gameLoop;
     let spikeTimer;
@@ -197,9 +197,16 @@
       }, 20);
     }
     
-    // Spawn spikes
+    // Spawn spikes - one at a time
     function spawnSpike() {
       if (!isGameRunning) return;
+      
+      // Wait until the last spike is gone before spawning next
+      if (spikes.length > 0) {
+        const nextSpawn = 200;
+        spikeTimer = setTimeout(spawnSpike, nextSpawn);
+        return;
+      }
       
       const spike = document.createElement('div');
       spike.className = 'spike';
@@ -207,9 +214,9 @@
       gameContainer.appendChild(spike);
       spikes.push(spike);
       
-      // Random next spawn time
-      const nextSpawn = 1000 + Math.random() * 1500 - gameSpeed * 50;
-      spikeTimer = setTimeout(spawnSpike, Math.max(600, nextSpawn));
+      // Spawn next spike after this one is mostly past player
+      const nextSpawn = 1200 + Math.random() * 400;
+      spikeTimer = setTimeout(spawnSpike, nextSpawn);
     }
     
     // Move spikes and check collision
